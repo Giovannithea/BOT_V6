@@ -1,5 +1,6 @@
-const { Connection, PublicKey, Transaction, TransactionInstruction, ComputeBudgetProgram } = require("@solana/web3.js");
+const { Connection, PublicKey, Transaction, TransactionInstruction, ComputeBudgetProgram, Keypair } = require("@solana/web3.js");
 const { TOKEN_PROGRAM_ID } = require("@solana/spl-token");
+const bs58 = require('bs58');
 require("dotenv").config();
 
 const connection = new Connection(process.env.SOLANA_WS_URL, "confirmed");
@@ -109,7 +110,9 @@ async function swapTokens({
             throw new Error(`Invalid ammId address: ${tokenData.ammId}`);
         }
 
-        const userOwner = new PublicKey(process.env.WALLET_PRIVATE_KEY);
+        const userOwner = Keypair.fromSecretKey(
+            bs58.default.decode(process.env.WALLET_PRIVATE_KEY)
+        );
 
         // Check token balance before swap
         const balance = await checkTokenBalance(userSource);
@@ -153,7 +156,7 @@ async function swapTokens({
             .add(priorityFeeIx)
             .add(swapIx);
 
-        transaction.feePayer = userOwner;
+        transaction.feePayer = userOwner.publicKey;
 
         const { blockhash } = await connection.getLatestBlockhash();
         transaction.recentBlockhash = blockhash;
